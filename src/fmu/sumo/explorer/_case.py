@@ -1,14 +1,8 @@
 from typing import List
-from fmu.sumo.explorer._utils import Utils
+from fmu.sumo.explorer._utils import Utils, TimeData, Property, ObjectType
 from fmu.sumo.explorer._document_collection import DocumentCollection
 from fmu.sumo.explorer._child_object import ChildObject
 import deprecation
-
-OBJECT_TYPES = {
-    'surface': '.gri',
-    'polygons': '.csv',
-    'table': '.csv'
-}
 
 class Case:
     def __init__(self, sumo_client, meta_data):
@@ -185,27 +179,29 @@ class Case:
     
     def get_object_property_values(
         self,
-        property: str,
-        object_type: str,
+        property: Property,
+        object_type: ObjectType,
         object_names: List[str]=[],
         tag_names: List[str]=[],
         time_intervals: List[str]=[],
         iteration_ids: List[str]=[],
         realization_ids: List[int]=[],
-        aggregations: List[int]=[]
+        aggregations: List[int]=[],
+        include_time_data: TimeData = None
     ):
         """
             Get a dictionary of unique values for a given property in case child objects.
 
             Arguments:
-                `property`: tag_name | time_interval | aggregation | object_name | iteration_id | realization_id
-                `object_type`: surface | polygons | table
+                `property`: tag_name | time_interval | time_type | aggregation | object_name | iteration_id | realization_id (Property)
+                `object_type`: surface | polygons | table (ObjectType)
                 `object_names`: list of object names (strings)
                 `tag_names`: list of tag names (strings)
                 `time_intervals`: list of time intervals (strings)
                 `iteration_ids`: list of iteration ids (integers)
                 `realization_ids`: list of realizatio ids (intergers)
                 `aggregations`: list of aggregation operations (strings)
+                `include_time_data`: ALL | NO_TIMEDATA | ONLY_TIMEDATA (TimeData)
 
             Returns:
                 Dictionary of unique values and number of objects
@@ -214,6 +210,7 @@ class Case:
         accepted_properties = {
             "tag_name": "tag_name",
             "time_interval": "time_interval",
+            "time_type": "time_type",
             "aggregation": "fmu.aggregation.operation.keyword",
             "object_name": "data.name.keyword",
             "iteration_id": "fmu.iteration.id",
@@ -250,7 +247,8 @@ class Case:
         elastic_query = self.utils.create_elastic_query(
             object_type=object_type,
             terms=terms,
-            aggregate_field=agg_field
+            aggregate_field=agg_field,
+            include_time_data=include_time_data
         )
 
         result = self.sumo.post("/search", json=elastic_query)
@@ -261,25 +259,27 @@ class Case:
 
     def get_objects(
         self,
-        object_type: str,
+        object_type: ObjectType,
         object_names: List[str]=[],
         tag_names: List[str]=[],
         time_intervals: List[str]=[],
         iteration_ids: List[int]=[],
         realization_ids: List[int]=[],
-        aggregations: List[str]=[]
+        aggregations: List[str]=[],
+        include_time_data: TimeData = None
     ):
         """
             Search for child objects in a case.
 
             Arguments:
-                `object_type`: surface | polygons | table
+                `object_type`: surface | polygons | table (ObjectType)
                 `object_names`: list of object names (strings)
                 `tag_names`: list of tag names (strings)
                 `time_intervals`: list of time intervals (strings)
                 `iteration_ids`: list of iteration ids (integers)
                 `realization_ids`: list of realizatio ids (intergers)
                 `aggregations`: list of aggregation operations (strings)
+                `include_time_data`: ALL | NO_TIMEDATA | ONLY_TIMEDATA (TimeData)
 
             Returns:
                 `DocumentCollection` used for retrieving search results
@@ -315,7 +315,8 @@ class Case:
             fields_exists=fields_exists,
             terms=terms,
             size=20,
-            sort=[{"tracklog.datetime": "desc"}]
+            sort=[{"tracklog.datetime": "desc"}],
+            include_time_data=include_time_data
         )
 
         return DocumentCollection(
