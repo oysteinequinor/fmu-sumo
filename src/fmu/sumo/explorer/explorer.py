@@ -1,5 +1,4 @@
 """Module for reading FMU results from Sumo in the FMU context."""
-
 from typing import List, Dict
 from sumo.wrapper import SumoClient
 from fmu.sumo.explorer._case import Case
@@ -73,7 +72,7 @@ class Explorer:
         return users
 
     def get_status(self) -> Dict[str, int]:
-        """Returns dictionary of status per case."""
+        """Returns dictionary with status of per case"""
         result = self.sumo.get("/searchroot", size=0, buckets=["_sumo.status.keyword"])
 
         buckets = result["aggregations"]["_sumo.status.keyword"]["buckets"]
@@ -82,7 +81,9 @@ class Explorer:
         return status
 
     def get_dict_of_case_names(self, size=1000) -> Dict[str, str]:
-        """Returns mapping of case names to Sumo case ID"""
+        """ "Returns mapping of case names to Sumo case ID
+        returns: case_dict (dict): key is name, value is sumo id
+        """
         results = return_hits(
             self.get(
                 "/searchroot", query="class:case", select=["fmu.case.name"], size=size

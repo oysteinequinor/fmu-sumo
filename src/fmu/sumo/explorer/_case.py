@@ -2,7 +2,7 @@
 from typing import List, Dict
 import deprecation
 from fmu.sumo.explorer._utils import Utils, TimeData, Property, ObjectType
-from fmu.sumo.explorer._utils import get_object_blob_ids
+from fmu.sumo.explorer._utils import get_object_ids
 from fmu.sumo.explorer._document_collection import DocumentCollection
 from fmu.sumo.explorer._child_object import ChildObject
 
@@ -48,17 +48,14 @@ class Case:
 
         return self.utils.map_buckets(buckets)
 
-    def get_summary_blob_ids(self, **kwargs) -> Dict[str, str]:
-        """Gets blob_ids for summary data aggregated per vector.
-
+    def get_summary_object_ids(self, **kwargs) -> Dict[str, str]:
+        """Gets blob_ids for summary data aggregated per vector
         args kwargs (dict): various keyword arguments
         returns dictionary with vector name as key, value object id
         """
-        return get_object_blob_ids(
-            self, data_type="table", content="timeseries", **kwargs
-        )
+        return get_object_ids(self, data_type="table", content="timeseries", **kwargs)
 
-    def get_blob_ids(
+    def get_object_ids(
         self, name, tag, data_type="surface", content="depth", iteration=0, **kwargs
     ) -> Dict[str, str]:
         """Gets blob ids for most datatypes.
@@ -67,14 +64,15 @@ class Case:
 
         args:
             name (str): name of data object
-            tag (str): what type of tag, more or less the same as representation in rms
+            tag (str): what type of tag, more or less the same as representation
+                   in rms
             data_type (str): what type
             content (str): what type of content depth, time, timeseries etc
             iteration (int): the iteration to get data for
-            kwargs (dict): keyword arguments
-        """
+            kwargs (dict): keyword arguements.
 
-        return get_object_blob_ids(
+        """
+        return get_object_ids(
             self,
             name=name,
             tag=tag,
