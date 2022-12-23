@@ -5,13 +5,12 @@ import json
 from pathlib import Path
 from uuid import UUID
 import pytest
-from context import Explorer, ut
+from context import Explorer, Case, DocumentCollection, ut
 
 
 TEST_DATA = Path("data")
 logging.basicConfig(level="DEBUG")
 LOGGER = logging.getLogger()
-LOGGER.debug("Tjohei")
 
 
 @pytest.fixture(name="the_logger")
@@ -22,36 +21,22 @@ def fixture_the_logger():
 
 @pytest.fixture(name="case_name")
 def fixture_case_name():
-    """Returns case name
-    """
+    """Returns case name"""
     return "21.x.0.dev_rowh2022_08-17"
 
 
-@pytest.fixture(name="test_explorer")
-def fixture_test_explorer(token):
+@pytest.fixture(name="explorer")
+def fixture_explorer(token):
     """Returns explorer"""
-    return Explorer("test", token=token)
-
-
-# @pytest.fixture(name="prod_explorer")
-# def fixture_prod_explorer(token):
-#     """Returns explorer"""
-#     return Explorer("prod", token=token)
+    return Explorer("dev", token=token)
 
 
 @pytest.fixture(name="test_case")
 def fixture_test_case(test_explorer, case_name):
     """Basis for test of method get_case_by_name for Explorer,
-       but also other attributes
+    but also other attributes
     """
     return test_explorer.get_case_by_name(case_name)
-
-
-# @pytest.fixture(name="sum_case")
-# def fixture_sum_case(token):
-#     """Gets case with summary data from prod"""
-#     exp = Explorer("prod",token=token)
-#     return exp.get_case_by_name("drogon_design_2022_11-01")
 
 
 def write_json(result_file, results):
@@ -114,19 +99,9 @@ def assert_dict_equality(results, correct):
     correct (dict): the one to compare to
     """
     incorrect_mess = (
-        f"the dictionary produced ({results}) is not equal to \n" +
-        f" ({correct})")
+        f"the dictionary produced ({results}) is not equal to \n" + f" ({correct})"
+    )
     assert results == correct, incorrect_mess
-
-# Come back to this
-# def test_logger(caplog):
-#     """Tests the defined logger in explorer"""
-#     logger_name = "tests"
-#     logger = ut.init_logging(logger_name, "debug")
-#     message = "works!"
-#     logger.debug(message)
-#     with caplog:
-#         assert caplog.record_tuples == [(logger_name, logging.DEBUG, message)]
 
 
 def test_cast_toomany_warning():
@@ -173,94 +148,50 @@ def test_toolowsize_warning_content():
         assert warn_message == test_message, assert_mess
 
 
-# def test_sumo_id_attribute(sum_case):
-#     """Tests getting sumo_id
-#     args
-#     test_explorer (sumo.Explorer):
-#     """
-#     assert_correct_uuid(sum_case.sumo_id)
+def test_get_cases(explorer):
+    """Test the get_cases method."""
+
+    cases = explorer.get_cases()
+    assert isinstance(cases, DocumentCollection)
+    assert isinstance(cases[0], Case)
 
 
-# def test_get_dict_of_case_names(prod_explorer):
-#     """tests method get_dict_of_cases
-#     """
+def test_get_cases_fields(explorer):
+    """Test get_cases method with the fields argument.
 
-#     assert_uuid_dict(prod_explorer.get_dict_of_case_names())
+    Shall be case insensitive.
+    """
 
-
-# def test_func_get_surface_object_ids(the_logger, sum_case):
-#     """Tests method get_object_blob_ids"""
-
-#     results = ut.get_object_ids(sum_case, data_type="surface", content="depth",
-#                                 name="VOLANTIS GP. Base",
-#                                 tag="FACIES_Fraction_Offshore", iteration=0,
-#     )
-#     # |result_file = "dict_of_surface_blob_ids.json"
-
-#     # write_json(result_file, results)
-#     # correct = read_json(result_file)
-
-#     assert len(results) == 155
-#     assert_uuid_dict(results)
-    # assert_dict_equality(results, correct)
+    cases = explorer.get_cases(fields=["dRoGoN"])
+    for case in cases:
+        assert case.field_name.lower() == "drogon"
 
 
-# def test_funct_get_surface_object_ids_w_aggregation(sum_case):
+def test_get_cases_status(explorer):
+    """Test the get_cases method with the status argument."""
 
-#     """Tests function get_object_blob_ids with aggregation"""
-#     results = ut.get_aggregated_object_ids(sum_case, data_type="surface", content="depth",
-#                                            name="VOLANTIS GP. Base",
-#                                            tag="FACIES_Fraction_Offshore", iteration=0,
-#                                            aggregation="*"
-#     )
-#     assert len(results.keys()) == 1
-#     for surf_name in results:
-#         assert len(results[surf_name]) == 7
-#         assert isinstance(surf_name, str)
-#         assert_uuid_dict(results[surf_name])
+    cases = explorer.get_cases(status=["keep"])
+    for case in cases:
+        assert case.status == "keep"
 
 
-# def test_func_get_sum_object_ids(the_logger, sum_case):
-#     """Tests method get_object_blob_ids"""
-#     results = ut.get_object_ids(sum_case, data_type="table",
-#                                 content="timeseries",
-#     )
-#     # result_file = "dict_of_sum_blob_ids.json"
+def test_get_cases_user(explorer):
+    """Test the get_cases method with the users argument."""
 
-#     # write_json(result_file, results)
-
-#     # correct = read_json(result_file)
-
-#     assert len(results) == 974
-#     assert_uuid_dict(results)
-#     # assert_dict_equality(results, correct)
+    cases = explorer.get_cases(users=["peesv"])
+    for case in cases:
+        assert case.user == "peesv"
 
 
-# def test_method_get_surface_object_ids(the_logger, sum_case):
-#     """Tests method get_object_blob_ids"""
+def test_get_cases_combinations(explorer):
+    """Test the get_cases method with combined arguments."""
 
-#     results = sum_case.get_object_ids("VOLANTIS GP. Base",
-#                                     "FACIES_Fraction_Offshore")
-
-#     # result_file = "dict_of_surface_blob_ids.json"
-
-#     # write_json(result_file, results)
-#     # correct = read_json(result_file)
-
-#     assert len(results) == 155
-#     assert_uuid_dict(results)
-#     # assert_dict_equality(results, correct)
-
-
-# def test_method_get_sum_object_ids(the_logger, sum_case):
-#     """Tests method get_object_blob_ids"""
-#     results = sum_case.get_summary_object_ids()
-#     # result_file = "dict_of_sum_blob_ids.json"
-
-#     # write_json(result_file, results)
-
-#     # |correct = read_json(result_file)
-
-#     assert len(results) == 974
-#     assert_uuid_dict(results)
-#     # assert_dict_equality(results, correct)
+    cases = explorer.get_cases(
+        fields=["Drogon", "Johan_Sverdrup"], users=["peesv", "dbs"], status=["keep"]
+    )
+    for case in cases:
+        assert (
+            case.user in ["peesv", "dbs"]
+            and case.field_name.lower() in ["drogon", "johan_sverdrup"]
+            and case.status == "keep"
+        )
