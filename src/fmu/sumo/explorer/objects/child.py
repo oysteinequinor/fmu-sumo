@@ -33,8 +33,12 @@ class Child(Document):
         return self._get_property(["fmu", "realization", "id"])
 
     @property
-    def aggregation(self):
+    def operation(self):
         return self._get_property(["fmu", "aggregation", "operation"])
+
+    @property
+    def stage(self):
+        return self._get_property(["fmu", "context", "stage"])
 
     @property
     def blob(self):

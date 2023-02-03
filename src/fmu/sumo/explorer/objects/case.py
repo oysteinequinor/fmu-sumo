@@ -1,8 +1,11 @@
 from sumo.wrapper import SumoClient
+from fmu.sumo.explorer.objects.document import Document
+from fmu.sumo.explorer.contexts.realization import RealizationContext
+from fmu.sumo.explorer.contexts.aggregation import AggregationContext
+from fmu.sumo.explorer.contexts.observation import ObservationContext
 from fmu.sumo.explorer.objects.surface_collection import SurfaceCollection
 from fmu.sumo.explorer.objects.polygons_collection import PolygonsCollection
 from fmu.sumo.explorer.objects.table_collection import TableCollection
-from fmu.sumo.explorer.objects.document import Document
 from typing import Dict
 
 
@@ -12,9 +15,6 @@ class Case(Document):
     def __init__(self, sumo: SumoClient, metadata: Dict):
         super().__init__(metadata)
         self._sumo = sumo
-        self._surfaces = SurfaceCollection(self._sumo, self.id)
-        self._polygons = PolygonsCollection(self._sumo, self.id)
-        self._tables = TableCollection(self._sumo, self.id)
 
     @property
     def name(self):
@@ -38,16 +38,25 @@ class Case(Document):
         return fields[0]["identifier"]
 
     @property
+    def realization(self):
+        return RealizationContext(self._sumo, self._id)
+
+    @property
+    def aggregation(self):
+        return AggregationContext(self._sumo, self._id)
+
+    @property
+    def observation(self):
+        return ObservationContext(self._sumo, self._id)
+
+    @property
     def surfaces(self):
-        """Case surfaces"""
-        return self._surfaces
+        return SurfaceCollection(self._sumo, self._id)
 
     @property
     def polygons(self):
-        """Case polygons"""
-        return self._polygons
+        return PolygonsCollection(self._sumo, self._id)
 
     @property
     def tables(self):
-        """Case tables"""
-        return self._tables
+        return TableCollection(self._sumo, self._id)
