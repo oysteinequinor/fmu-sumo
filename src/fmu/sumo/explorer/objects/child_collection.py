@@ -1,6 +1,7 @@
 from fmu.sumo.explorer.objects.document_collection import DocumentCollection
 from typing import List, Dict, Union
 from sumo.wrapper import SumoClient
+from fmu.sumo.explorer.timefilter import TimeFilter
 
 
 class ChildCollection(DocumentCollection):
@@ -50,25 +51,48 @@ class ChildCollection(DocumentCollection):
 
     def _add_filter(
         self,
-        name: Union[str, List[str]] = None,
-        tagname: Union[str, List[str]] = None,
-        iteration: Union[int, List[int]] = None,
-        realization: Union[int, List[int]] = None,
-        operation: Union[str, List[str]] = None,
-        stage: Union[str, List[str]] = None,
-    ) -> Dict:
-        must = self._utils.build_terms(
-            {
-                "data.name.keyword": name,
-                "data.tagname.keyword": tagname,
-                "fmu.iteration.id": iteration,
-                "fmu.realization.id": realization,
-                "fmu.aggregation.operation.keyword": operation,
-                "fmu.context.stage.keyword": stage,
-            }
-        )
+        name: Union[str, List[str], bool] = None,
+        tagname: Union[str, List[str], bool] = None,
+        iteration: Union[int, List[int], bool] = None,
+        realization: Union[int, List[int], bool] = None,
+        operation: Union[str, List[str], bool] = None,
+        stage: Union[str, List[str], bool] = None,
+        time: TimeFilter = None,
+    ):
+        must = []
+        must_not = []
+
+        prop_map = {
+            "data.name.keyword": name,
+            "data.tagname.keyword": tagname,
+            "fmu.iteration.id": iteration,
+            "fmu.realization.id": realization,
+            "fmu.aggregation.operation.keyword": operation,
+            "fmu.context.stage.keyword": stage,
+        }
+
+        for prop in prop_map:
+            value = prop_map[prop]
+
+            if value is not None:
+                if type(value) == bool:
+                    if value:
+                        must.append({"exists": {"field": prop}})
+                    else:
+                        must_not.append({"exists": {"field": prop}})
+                else:
+                    term = "terms" if type(value) == list else "term"
+                    must.append({term: {prop: value}})
+
+        query = {"bool": {}}
 
         if len(must) > 0:
-            return super()._add_filter({"bool": {"must": must}})
+            query["bool"]["must"] = must
 
-        return self._query
+        if len(must_not) > 0:
+            query["bool"]["must_not"] = must_not
+
+        if time:
+            query = self._utils.extend_query_object(query, time.get_query())
+
+        return super()._add_filter(query)
