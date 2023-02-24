@@ -4,30 +4,20 @@
 # pylint: skip-file
 import os
 import sys
-
-# cwd = os.getcwd()
-# project_root = os.path.dirname(cwd) + "/src/fmu"
-# sys.path.insert(0, project_root)
-
-# Below is a hack to make Sphinx import other modules
-
 from pathlib import Path
 import sphinx
-
-# directly inject into sys.path the path where all modules are installed
-sys.path.insert(0, str(Path(sphinx.__file__).parent.parent))  # for helvete
-
-print(sys.path)
-
 from datetime import date
 
-import fmu.sumo
-from fmu.sumo import explorer, uploader
+# directly inject into sys.path the path where all modules are installed
+sys.path.insert(0, str(Path(sphinx.__file__).parent.parent))
+
+# import fmu.sumo
+# from fmu.sumo import explorer, uploader
 
 # -- General configuration ---------------------------------------------
 
 # The full version, including alpha/beta/rc tags.
-release = fmu.sumo.__version__
+# release = fmu.sumo.__version__
 
 extensions = [
     "sphinxcontrib.apidoc",
@@ -41,7 +31,19 @@ extensions = [
 
 togglebutton_hint = "Expand"
 
-autodoc_mock_imports = ["ert", "ert_shared"]
+autodoc_mock_imports = [
+    "ert",
+    "ert_shared",
+    "sumo",
+    "xtgeo",
+    "pandas",
+    "yaml",
+    "azure",
+]
+
+os.environ[
+    "SPHINX_APIDOC_OPTIONS"
+] = "members,show-inheritance,inherited-members"
 
 apidoc_module_dir = "../src/fmu"
 apidoc_output_dir = "apiref"
@@ -63,12 +65,12 @@ master_doc = "index"
 # General information about the project.
 project = "fmu.sumo"
 current_year = date.today().year
-copyright = "Equinor " + str(current_year) + f" (fmu-sumo release {release})"
+# copyright = "Equinor " + str(current_year) + f" (fmu-sumo release {release})"
 
 
 # Sort members by input order in classes
 autodoc_member_order = "bysource"
-autodoc_default_flags = ["members", "show_inheritance"]
+autodoc_default_flags = ["members", "show-inheritance", "inherited-members"]
 
 exclude_patterns = ["_build"]
 
