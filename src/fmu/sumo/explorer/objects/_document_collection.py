@@ -1,6 +1,7 @@
 from sumo.wrapper import SumoClient
 from fmu.sumo.explorer._utils import Utils
 from typing import List, Dict
+from fmu.sumo.explorer.pit import Pit
 
 
 class DocumentCollection:
@@ -12,10 +13,14 @@ class DocumentCollection:
         sumo: SumoClient,
         query: Dict = None,
         select: List[str] = None,
+        pit: Pit = None,
     ):
         self._utils = Utils(sumo)
         self._type = type
         self._sumo = sumo
+        self._query = self._init_query(type, query)
+        self._pit = pit
+
         self._after = None
         self._curr_index = 0
         self._len = None
@@ -99,6 +104,9 @@ class DocumentCollection:
 
         if self._after is not None:
             query["search_after"] = self._after
+
+        if self._pit is not None:
+            query["pit"] = self._pit.get_pit_object()
 
         res = self._sumo.post("/search", json=query).json()
         hits = res["hits"]

@@ -2,6 +2,7 @@ from fmu.sumo.explorer.objects._document_collection import DocumentCollection
 from sumo.wrapper import SumoClient
 from fmu.sumo.explorer.objects.case import Case
 from typing import Union, List, Dict
+from fmu.sumo.explorer.pit import Pit
 
 _CASE_FIELDS = [
     "_id",
@@ -16,8 +17,14 @@ _CASE_FIELDS = [
 class CaseCollection(DocumentCollection):
     """A class for representing a collection of cases in Sumo"""
 
-    def __init__(self, sumo: SumoClient, query: Dict = None):
-        super().__init__("case", sumo, query, _CASE_FIELDS)
+    def __init__(self, sumo: SumoClient, query: Dict = None, pit: Pit = None):
+        """
+        Args:
+            sumo (SumoClient): connection to Sumo
+            query (dict): elastic query object
+            pit (Pit): point in time
+        """
+        super().__init__("case", sumo, query, _CASE_FIELDS, pit)
 
     @property
     def names(self) -> List[str]:
@@ -48,7 +55,7 @@ class CaseCollection(DocumentCollection):
 
     def __getitem__(self, index: int) -> Case:
         doc = super().__getitem__(index)
-        return Case(self._sumo, doc)
+        return Case(self._sumo, doc, self._pit)
 
     def filter(
         self,
@@ -84,4 +91,4 @@ class CaseCollection(DocumentCollection):
         )
 
         query = super()._add_filter({"bool": {"must": must}})
-        return CaseCollection(self._sumo, query)
+        return CaseCollection(self._sumo, query, self._pit)
