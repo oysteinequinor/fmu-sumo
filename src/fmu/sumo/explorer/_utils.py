@@ -1,6 +1,7 @@
-from sumo.wrapper import SumoClient
+"""Module containing utility class"""
 from typing import List, Dict
 import json
+from sumo.wrapper import SumoClient
 
 
 class Utils:
@@ -97,18 +98,18 @@ class Utils:
         Returns:
             Dict: Extended query object
         """
-
+        return_value = old
         if new is not None:
             stringified = json.dumps(old)
             extended = json.loads(stringified)
 
             for key in new:
                 if key in extended:
-                    if type(new[key]) == dict:
+                    if isinstance(new[key], dict):
                         extended[key] = self.extend_query_object(
                             extended[key], new[key]
                         )
-                    elif type(new[key]) == list:
+                    elif isinstance(new[key], list):
                         for val in new[key]:
                             if val not in extended[key]:
                                 extended[key].append(val)
@@ -116,9 +117,8 @@ class Utils:
                         extended[key] = new[key]
                 else:
                     extended[key] = new[key]
-            return extended
-        else:
-            return old
+            return_value = extended
+        return return_value
 
     def build_terms(self, keys_vals: Dict) -> List[Dict]:
         """Build a list of term objects
@@ -152,7 +152,7 @@ class Utils:
         for key in keys_vals:
             val = keys_vals[key]
             if val is not None:
-                items = [val] if type(val) != list else val
+                items = [val] if not isinstance(val, list) else val
                 terms.append({"terms": {key: items}})
 
         return terms
