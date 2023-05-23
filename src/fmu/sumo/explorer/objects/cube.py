@@ -19,31 +19,27 @@ class Cube(Child):
         self._url = None
         self._sas = None
 
-    def _populate_url_and_sas(self):
+    def _populate_url(self):
         res = self._sumo.get(f"/objects('{self.uuid}')/blob/authuri")
-        res = json.loads(res.decode("UTF-8"))
-        self._url = res.get("baseuri") + self.uuid
-        self._sas = res.get("auth")
+        self._url = res.decode("UTF-8")
 
     @property
     def url(self) -> str:
         if self._url is None:
-            self._populate_url_and_sas()
-        return self._url
+            self._populate_url()
+        return self._url.split("?")[0] + "/"
 
     @property
     def sas(self) -> str:
-        if self._sas is None:
-            self._populate_url_and_sas()
-        return self._sas
+        if self._url is None:
+            self._populate_url()
+        return self._url.split("?")[1]
 
     @property
     def openvds_handle(self) -> openvds.core.VDS:
-        if self._url is None or self._sas is None:
-            self._populate_url_and_sas()
-        url = "azureSAS" + self._url[5:] + "/"
-        sas = "Suffix=?" + self._sas
-        return openvds.open(url, sas)
+        if self._url is None:
+            self._populate_url()
+        return openvds.open(self._url)
 
     @property
     def timestamp(self) -> str:
