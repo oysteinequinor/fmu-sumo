@@ -5,6 +5,7 @@ import pyarrow.parquet as pq
 import pyarrow.feather as pf
 from sumo.wrapper import SumoClient
 from fmu.sumo.explorer.objects._child import Child
+from warnings import warn
 
 
 class Table(Child):
@@ -27,8 +28,21 @@ class Table(Child):
         Returns:
             DataFrame: A DataFrame object
         """
-        if not self._dataframe:
+        warn(
+            ".dataframe is deprecated, renamed to .to_pandas",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return self.to_pandas
 
+    @property
+    def to_pandas(self) -> pd.DataFrame:
+        """Return object as a pandas DataFrame
+
+        Returns:
+            DataFrame: A DataFrame object
+        """
+        if not self._dataframe:
             try:
                 self._dataframe = pd.read_parquet(self.blob)
 
@@ -39,18 +53,34 @@ class Table(Child):
                     try:
                         self._dataframe = pd.read_csv(self.blob)
 
-
                     except UnicodeDecodeError as ud_error:
-                        raise TypeError("Come on, no way this is converting to pandas!!") from ud_error
+                        raise TypeError(
+                            "Come on, no way this is converting to pandas!!"
+                        ) from ud_error
 
         return self._dataframe
 
-    @dataframe.setter
-    def dataframe(self, frame: pd.DataFrame):
+    @to_pandas.setter
+    def to_pandas(self, frame: pd.DataFrame):
         self._dataframe = frame
 
     @property
     def arrowtable(self) -> pa.Table:
+        """Return object as an arrow Table
+
+        Returns:
+            pa.Table: _description_
+        """
+        warn(
+            ".arrowtable is deprecated, renamed to .to_arrow",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return self.to_arrow
+
+    @property
+    def to_arrow(self) -> pa.Table:
         """Return object as an arrow Table
 
         Returns:
