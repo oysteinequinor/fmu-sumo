@@ -27,12 +27,12 @@ class Child(Document):
     def tagname(self) -> str:
         """Object tagname"""
         return self._get_property(["data", "tagname"])
-    
+
     @property
     def stratigraphic(self) -> str:
         """Object stratigraphic"""
         return self._get_property(["data", "stratigraphic"])
-    
+
     @property
     def vertical_domain(self) -> str:
         """Object vertical_domain"""
