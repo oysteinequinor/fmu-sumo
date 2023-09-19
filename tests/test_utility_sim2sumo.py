@@ -7,10 +7,14 @@ from pathlib import Path
 import pandas as pd
 import pyarrow as pa
 import pytest
-from sumo.wrapper import SumoClient
-from fmu.sumo.utilities import sim2sumo
-from fmu.sumo.uploader import CaseOnDisk, SumoConnection
 
+from sumo.wrapper import SumoClient
+if sys.platform.startswith('win'):
+    pytest.skip(allow_module_level=True)
+else:
+    from fmu.sumo.utilities import sim2sumo
+
+from fmu.sumo.uploader import CaseOnDisk, SumoConnection
 
 REEK_ROOT = Path(__file__).parent / "data/reek"
 REAL_PATH = "realization-0/iter-0/"
