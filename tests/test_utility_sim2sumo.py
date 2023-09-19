@@ -56,16 +56,16 @@ def test_submodules_dict():
     (name for name in sim2sumo.SUBMODULES if name != "wellcompletiondata"),
 )
 # Skipping wellcompletion data, since this needs zonemap, which none of the others do
-def test_get_dataframe(submod):
+def test_get_results(submod):
     """Test fetching of dataframe"""
     extras = {}
     if submod == "wellcompletiondata":
         extras["zonemap"] = "data/reek/zones.lyr"
-    frame = sim2sumo.get_dataframe(REEK_DATA_FILE, submod)
+    frame = sim2sumo.get_results(REEK_DATA_FILE, submod)
     assert isinstance(
-        frame, pd.DataFrame
+        frame, pa.Table
     ), f"Call for get_dataframe should produce dataframe, but produces {type(frame)}"
-    frame = sim2sumo.get_dataframe(REEK_DATA_FILE, submod, arrow=True)
+    frame = sim2sumo.get_results(REEK_DATA_FILE, submod, arrow=True)
     assert isinstance(
         frame, pa.Table
     ), f"Call for get_dataframe with arrow=True should produce pa.Table, but produces {type(frame)}"
@@ -75,14 +75,14 @@ def test_get_dataframe(submod):
     "submod",
     (name for name in sim2sumo.SUBMODULES if name != "wellcompletiondata"),
 )
-def test_export_csv(tmp_path, submod):
+def test_export_results(tmp_path, submod):
     """Test writing of csv file"""
     os.chdir(tmp_path)
     export_path = (
-        tmp_path / f"share/results/tables/{REEK_BASE}--{submod}.csv".lower()
+        tmp_path / f"share/results/tables/{REEK_BASE}--{submod}.arrow".lower()
     )
     meta_path = export_path.parent / f".{export_path.name}.yml"
-    actual_path = sim2sumo.export_csv(
+    actual_path = sim2sumo.export_results(
         REEK_DATA_FILE,
         submod,
         CONFIG_PATH,
@@ -96,11 +96,11 @@ def test_export_csv(tmp_path, submod):
     assert meta_path.exists(), f"No export of metadata to {meta_path}"
 
 
-def test_export_csv_w_options(tmp_path, submod="summary"):
+def test_export_results_w_options(tmp_path, submod="summary"):
     """Test writing of csv file"""
     os.chdir(tmp_path)
     export_path = (
-        tmp_path / f"share/results/tables/{REEK_BASE}--{submod}.csv".lower()
+        tmp_path / f"share/results/tables/{REEK_BASE}--{submod}.arrow".lower()
     )
     key_args = {
         "time_index": "daily",
@@ -109,7 +109,7 @@ def test_export_csv_w_options(tmp_path, submod="summary"):
     }
 
     meta_path = export_path.parent / f".{export_path.name}.yml"
-    actual_path = sim2sumo.export_csv(
+    actual_path = sim2sumo.export_results(
         REEK_DATA_FILE, submod, CONFIG_PATH, **key_args
     )
     LOGGER.info(actual_path)
@@ -118,6 +118,9 @@ def test_export_csv_w_options(tmp_path, submod="summary"):
         str,
     ), "No string returned for path"
     assert export_path.exists(), f"No export of data to {export_path}"
+    assert "arrow" in str(
+        export_path
+    ), f"No arrow in path, should be, path is {export_path}"
     assert meta_path.exists(), f"No export of metadata to {meta_path}"
 
 
@@ -127,19 +130,19 @@ CHECK_DICT = {
         "nrdatafile": 1,
         "nrsubmods": 16,
         "nroptions": 1,
-        "arrow": False,
+        "arrow": True,
     },
     "global_variables_w_eclpath_and_extras.yml": {
         "nrdatafile": 1,
         "nrsubmods": 3,
         "nroptions": 4,
-        "arrow": True,
+        "arrow": False,
     },
     "global_variables.yml": {
         "nrdatafile": 2,
-        "nrsubmods": 16,
+        "nrsubmods": 3,
         "nroptions": 1,
-        "arrow": False,
+        "arrow": True,
     },
 }
 
@@ -166,7 +169,7 @@ def test_read_config(config_path):
     """Test reading of config file via read_config function"""
     os.chdir(REEK_REAL)
     LOGGER.info(config_path)
-    config = sim2sumo.yaml_load(config_path)["sim2sumo"]
+    config = sim2sumo.yaml_load(config_path)
     assert isinstance(config, (dict, bool))
     dfiles, submods, opts = sim2sumo.read_config(config)
     name = config_path.name
@@ -246,6 +249,13 @@ def test_export_w_config(tmp_path, config_path):
 #     path = f"/objects('{case_uuid}')"
 
 #     sumo.delete(path)
+
+
+def test_convert_to_arrow():
+    """Test function convert_to_arrow"""
+    dframe = pd.DataFrame([1, 2], columns=["a"])
+    table = sim2sumo.convert_to_arrow(dframe)
+    assert isinstance(table, pa.Table), "Did not convert to table"
 
 
 if __name__ == "__main__":

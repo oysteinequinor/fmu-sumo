@@ -1,6 +1,7 @@
 """Export with metadata"""
 import sys
 import re
+from typing import Union
 from pathlib import Path
 import logging
 import importlib
@@ -9,7 +10,7 @@ from inspect import signature
 import pandas as pd
 import ecl2df as sim2df
 import ecl2df
-from pyarrow import Table
+import pyarrow as pa
 import yaml
 from fmu.dataio import ExportData
 from fmu.sumo.uploader.scripts.sumo_upload import sumo_upload_main
@@ -68,6 +69,7 @@ def _define_submodules():
                 "No premade function for converting to arrow in %s",
                 submod_path,
             )
+
         logger.debug("Assigning %s to %s", submodules[submod], submod)
 
     logger.debug(
@@ -110,13 +112,13 @@ def convert_to_arrow(frame):
     Returns:
         pa.Table: the converted dataframe
     """
-    table = Table.from_pandas(frame)
+    table = pa.Table.from_pandas(frame)
     return table
 
 
-def get_dataframe(
+def get_results(
     datafile_path: str, submod: str, print_help=False, **kwargs
-) -> pd.DataFrame:
+) -> Union[pa.Table, pd.DataFrame]:
     """Fetch dataframe from simulator results
 
     Args:
@@ -129,8 +131,8 @@ def get_dataframe(
     """
     logger = logging.getLogger(__file__ + ".get_dataframe")
     extract_df = SUBMOD_DICT[submod]["extract"]
-    arrow = kwargs.get("arrow", False)
-    frame = None
+    arrow = kwargs.get("arrow", True)
+    output = None
     trace = None
     if print_help:
         print(SUBMOD_DICT[submod]["doc"])
@@ -142,18 +144,26 @@ def get_dataframe(
         }
         logger.debug("Exporting with arguments %s", right_kwargs)
         try:
-            frame = extract_df(sim2df.EclFiles(datafile_path), **right_kwargs)
+            output = extract_df(sim2df.EclFiles(datafile_path), **right_kwargs)
             if arrow:
                 try:
-                    frame = kwargs["arrow_convertor"](frame)
+                    output = kwargs["arrow_convertor"](output)
                 except KeyError:
                     logger.debug("No arrow convertor defined for %s", submod)
-                    frame = convert_to_arrow(frame)
+                    try:
+                        output = convert_to_arrow(output)
+                    except pa.lib.ArrowInvalid:
+                        logger.warning(
+                            "Cannot convert to arrow, keeping pandas format"
+                        )
 
         except TypeError:
             trace = sys.exc_info()[1]
         except FileNotFoundError:
             trace = sys.exc_info()[1]
+        except ValueError:
+            trace = sys.exc_info()[1]
+
         if trace is not None:
             logger.warning(
                 "Trace: %s, \nNo results produced ",
@@ -161,7 +171,7 @@ def get_dataframe(
             )
     if submod == "rft":
         tidy()
-    return frame
+    return output
 
 
 def tidy():
@@ -180,7 +190,7 @@ def tidy():
             unwanted_posix.unlink()
 
 
-def export_csv(
+def export_results(
     datafile_path: str,
     submod: str,
     config_file="fmuconfig/output/global_variables.yml",
@@ -195,9 +205,9 @@ def export_csv(
     Returns:
         str: path of export
     """
-    logger = logging.getLogger(__file__ + ".export_csv")
+    logger = logging.getLogger(__file__ + ".export_results")
     # check_options(submod, kwargs)
-    frame = get_dataframe(datafile_path, submod, **kwargs)
+    frame = get_results(datafile_path, submod, **kwargs)
     if frame is not None:
         logger.debug("Reading global variables from %s", config_file)
         cfg = yaml_load(config_file)
@@ -223,9 +233,24 @@ def read_config(config):
     """
     # datafile can be read as list, or string which can be either folder or filepath
     logger = logging.getLogger(__file__ + ".read_config")
-    if isinstance(config, bool):
-        config = {}
-    datafile = config.get("datafile", "eclipse/model/")
+    logger.debug("Input config keys are %s", config.keys())
+
+    defaults = {
+        "datafile": "eclipse/model/",
+        "datatypes": ["summary", "rft", "satfunc"],
+        "options": {"arrow": True},
+    }
+    try:
+        simconfig = config["sim2sumo"]
+    except KeyError:
+        logger.warning(
+            "No specification in config, will use defaults %s", defaults
+        )
+        simconfig = defaults
+    if isinstance(simconfig, bool):
+        simconfig = defaults
+
+    datafile = simconfig.get("datafile", "eclipse/model/")
     if isinstance(datafile, str):
         logger.debug("Using %s to read results", datafile)
         datafile_posix = Path(datafile)
@@ -240,16 +265,23 @@ def read_config(config):
         logger.debug("List")
         datafiles = datafile
     logger.debug("Datafile(s) to use %s", datafiles)
+
     try:
-        submods = config["datatypes"]
+        submods = simconfig["datatypes"]
     except KeyError:
         submods = SUBMODULES
     try:
-        options = config["options"]
+        options = simconfig["options"]
     except KeyError:
         logger.info("No special options selected")
         options = {}
-    options["arrow"] = options.get("arrow", False)
+    options["arrow"] = options.get("arrow", True)
+    logger.info(
+        "Running with: datafile(s): \n%s \n Types: \n %s \noptions:\n %s",
+        datafiles,
+        submods,
+        options,
+    )
     return datafiles, submods, options
 
 
@@ -265,26 +297,20 @@ def export_with_config(config_path):
     export_path = None
     try:
         count = 0
-        config = yaml_load(config_path)
-        try:
-            sim_specifics = config["sim2sumo"]
-            datafiles, submods, options = read_config(sim_specifics)
-            for datafile in datafiles:
-                for submod in submods:
-                    export_path = export_csv(
-                        datafile,
-                        submod,
-                        config_file=config_path,
-                        **options,
-                    )
-                    count += 1
-                    export_path = Path(export_path)
-                    suffixes.add(export_path.suffix)
-        except KeyError:
-            logger.warning(
-                "No export from reservoir simulator\n,"
-                + " No sim2sumo keyword in config?"
-            )
+
+        datafiles, submods, options = read_config(yaml_load(config_path))
+        for datafile in datafiles:
+            for submod in submods:
+                logger.info("Exporting %s", submod)
+                export_path = export_results(
+                    datafile,
+                    submod,
+                    config_file=config_path,
+                    **options,
+                )
+                count += 1
+                export_path = Path(export_path)
+                suffixes.add(export_path.suffix)
         try:
             export_folder = str(export_path.parent)
             logger.info("Exported %i files to %s", count, export_folder)
