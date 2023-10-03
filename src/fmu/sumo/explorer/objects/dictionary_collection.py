@@ -29,6 +29,10 @@ class DictionaryCollection(ChildCollection):
         doc = super().__getitem__(index)
         return Dictionary(self._sumo, doc)
 
+    async def getitem_async(self, index: int) -> Dictionary:
+        doc = await super().getitem_async(index)
+        return Dictionary(self._sumo, doc)
+
     def filter(
         self,
         name: Union[str, List[str], bool] = None,
