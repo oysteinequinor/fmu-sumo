@@ -1,5 +1,7 @@
 """Tests explorer"""
-import openvds
+import sys
+if not sys.platform.startswith('darwin'):
+    import openvds
 import logging
 import json
 from pathlib import Path
@@ -267,6 +269,7 @@ def test_get_case_by_uuid(explorer: Explorer, case_uuid: str, case_name: str):
     assert case.uuid == case_uuid
     assert case.name == case_name
 
+@pytest.mark.skipif(sys.platform.startswith('darwin'), reason="do not run OpenVDS SEGYImport on mac os")
 def test_seismic_case_by_uuid(explorer: Explorer, seismic_case_uuid: str):
     """Test that explorer returns openvds compatible cubes for seismic case"""
     case = explorer.get_case_by_uuid(seismic_case_uuid)
