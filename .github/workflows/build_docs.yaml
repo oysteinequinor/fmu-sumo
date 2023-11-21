@@ -13,14 +13,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ["3.8.17"]
+        python-version: ["3.10"]
         os: [ubuntu-latest]
 
     steps:
       - uses: actions/checkout@v1
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -28,4 +28,4 @@ jobs:
         run: |
           pip install pip -U && pip install wheel -U
           pip install .[docs]
-          python setup.py build_sphinx
+          sphinx-build docs build/sphinx/html

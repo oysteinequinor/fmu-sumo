@@ -34,8 +34,6 @@ autodoc_mock_imports = [
     "sumo",
     "xtgeo",
     "pandas",
-    "yaml",
-    "azure",
 ]
 
 os.environ[
@@ -44,7 +42,7 @@ os.environ[
 
 apidoc_module_dir = "../src/fmu"
 apidoc_output_dir = "apiref"
-apidoc_excluded_paths = ["version.py", "hook_implementations"]
+apidoc_excluded_paths = ["_version.py", "hook_implementations"]
 apidoc_separate_modules = True
 apidoc_module_first = True
 apidoc_extra_args = ["-H", "API reference for fmu.sumo"]
