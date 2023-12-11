@@ -23,20 +23,6 @@ class Table(Child):
         self._arrowtable = None
         self._logger = logging.getLogger("__name__" + ".Table")
 
-    @property
-    def dataframe(self) -> pd.DataFrame:
-        """Return object as a pandas DataFrame
-
-        Returns:
-            DataFrame: A DataFrame object
-        """
-        warn(
-            ".dataframe is deprecated, renamed to .to_pandas",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.to_pandas()
-
 
     def to_pandas(self) -> pd.DataFrame:
         """Return object as a pandas DataFrame
@@ -106,21 +92,6 @@ class Table(Child):
         self._logger.debug("Read blob as %s to return pandas", worked)
         return self._dataframe
 
-
-    @property
-    def arrowtable(self) -> pa.Table:
-        """Return object as an arrow Table
-
-        Returns:
-            pa.Table: _description_
-        """
-        warn(
-            ".arrowtable is deprecated, renamed to .to_arrow",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        return self.to_arrow()
 
     def to_arrow(self) -> pa.Table:
         """Return object as an arrow Table
