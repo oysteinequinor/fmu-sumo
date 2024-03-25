@@ -243,7 +243,8 @@ The `SurfaceCollection.filter` method takes the following parameters:
 
 * uuid
 * name 
-* tagname 
+* tagname
+* dataformat
 * iteration 
 * realization 
 * aggregation
@@ -279,7 +280,8 @@ Example: get aggregated surfaces
 We can get list of filter values for the following properties:
 
 * names
-* tagnames 
+* tagnames
+* dataformats
 * iterations 
 * realizations
 * aggregations 
@@ -302,9 +304,10 @@ Once we have a `Surface` object we can get surface metadata using properties:
 
     surface = case.surfaces[0]
 
-    print(surfaces.uuid)
-    print(surfaces.name)
-    print(surfaces.tagname)
+    print(surface.uuid)
+    print(surface.name)
+    print(surface.tagname)
+    print(surface.dataformat)
     print(surface.stratigraphic)
     print(surface.vertical_domain)
 
