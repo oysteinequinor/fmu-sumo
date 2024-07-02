@@ -1,7 +1,13 @@
 """Module containg class for surface"""
 from typing import Dict
-from xtgeo import RegularSurface, surface_from_file
 from fmu.sumo.explorer.objects._child import Child
+try:
+    from xtgeo import RegularSurface, surface_from_file
+except ImportError:
+    class RegularSurface:
+        pass
+    def surface_from_file(*args, **kwargs):
+        raise Exception("xtgeo not installed")
 
 
 class Surface(Child):

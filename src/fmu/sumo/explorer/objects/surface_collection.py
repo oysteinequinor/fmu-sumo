@@ -2,12 +2,18 @@
 
 from typing import Union, List, Dict, Tuple
 from io import BytesIO
-from xtgeo import RegularSurface, surface_from_file
 from sumo.wrapper import SumoClient
 from fmu.sumo.explorer.objects._child_collection import ChildCollection
 from fmu.sumo.explorer.objects.surface import Surface
 from fmu.sumo.explorer.timefilter import TimeFilter
 from fmu.sumo.explorer.pit import Pit
+try:
+    from xtgeo import RegularSurface, surface_from_file
+except ImportError:
+    class RegularSurface:
+        pass
+    def surface_from_file(*args, **kwargs):
+        raise Exception("xtgeo not installed")
 
 TIMESTAMP_QUERY = {
     "bool": {
